@@ -1,37 +1,76 @@
 export class Order {
-    constructor(sFrom) {
+  constructor(sFrom) {
       this.OrderState = {
-        WELCOMING: () => {
-          let aReturn = [];
-          this.stateCur = this.OrderState.RESERVING;
-          aReturn.push("Welcome to Rich's Acton Rapid Test.");
-          aReturn.push("Would you like to reserve a rapid test kit?");
-          return aReturn;
-        },
-        RESERVING: (sInput) => {
-          let aReturn = [];
-          this.isDone = true;
-          if (sInput.toLowerCase().startsWith('y')) {
-            aReturn.push(`Your rapid test is reserved under the phone number ${this.sFrom}`);
-            let d = new Date();
-            d.setMinutes(d.getMinutes() + 120);
-            aReturn.push(`Please pick it up at 123 Tidy St., Acton before ${d.toTimeString()}`);
-          } else {
-            aReturn.push("Thanks for trying our reservation system");
-            aReturn.push("Maybe next time");
+          WELCOMING: () => {
+              let aReturn = [];
+              this.stateCur = this.OrderState.ORDERING;
+              aReturn.push("Welcome to Dream Bites! Would you like to see our menu?");
+              return aReturn;
+          },
+          ORDERING: (sInput) => {
+              let aReturn = [];
+              if (sInput.toLowerCase().includes("yes")) {
+                  this.stateCur = this.OrderState.SELECTING;
+                  aReturn.push("Menu:");
+                  aReturn.push("- Pizza (Sizes: small, medium, large, Toppings: pepperoni, mushrooms, extra cheese)");
+                  aReturn.push("- Burger (Sizes: single, double, Toppings: lettuce, tomato, bacon)");
+                  aReturn.push("Upsell: Drinks available - soda, water, juice");
+                  aReturn.push("What would you like to order?");
+              } else {
+                  this.stateCur = this.OrderState.DONE;
+                  aReturn.push("Thanks for visiting Dream Bites! Maybe next time.");
+              }
+              return aReturn;
+          },
+          SELECTING: (sInput) => {
+              let aReturn = [];
+              let words = sInput.toLowerCase().split(" ");
+              for (let item in this.menu) {
+                  if (words.includes(item)) {
+                      let size = this.menu[item].sizes.find(size => words.includes(size));
+                      let topping = this.menu[item].toppings.find(topping => words.includes(topping)) || "no extra toppings";
+                      if (size) {
+                          this.order.push({ item, size, topping });
+                          aReturn.push(`Added ${size} ${item} with ${topping} to your order.`);
+                      }
+                  }
+              }
+              aReturn.push("Would you like to add a drink? (soda, water, juice)");
+              this.stateCur = this.OrderState.ADDING_DRINK;
+              return aReturn;
+          },
+          ADDING_DRINK: (sInput) => {
+              let aReturn = [];
+              let drink = this.drinks.find(d => sInput.toLowerCase().includes(d));
+              if (drink) {
+                  this.order.push({ item: drink });
+                  aReturn.push(`Added ${drink} to your order.`);
+              }
+              this.stateCur = this.OrderState.DONE;
+              aReturn.push("Thank you for your order! Your food will be ready soon.");
+              return aReturn;
+          },
+          DONE: () => {
+              return ["Your order is complete. Have a great day!"];
           }
-          return aReturn;
-        }
       };
-  
+
       this.stateCur = this.OrderState.WELCOMING;
       this.isDone = false;
       this.sFrom = sFrom;
-    }
-    handleInput(sInput) {
-      return this.stateCur(sInput);
-    }
-    isDone() {
-      return this.isDone;
-    }
+      this.order = [];
+      this.menu = {
+          "pizza": { sizes: ["small", "medium", "large"], toppings: ["pepperoni", "mushrooms", "extra cheese"] },
+          "burger": { sizes: ["single", "double"], toppings: ["lettuce", "tomato", "bacon"] }
+      };
+      this.drinks = ["soda", "water", "juice"];
   }
+
+  handleInput(sInput) {
+      return this.stateCur(sInput);
+  }
+
+  isDone() {
+      return this.stateCur === this.OrderState.DONE;
+  }
+}
